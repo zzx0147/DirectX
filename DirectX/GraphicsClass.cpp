@@ -4,10 +4,10 @@
 
 GraphicsClass::GraphicsClass()
 {
-	m_D3D = 0;
-	m_Camera = 0;
-	m_Model = 0;
-	m_ColorShader = 0;
+	m_D3D = nullptr;
+	m_Camera = nullptr;
+	m_Model = nullptr;
+	m_TextureShader = nullptr;
 }
 
 GraphicsClass::GraphicsClass(const GraphicsClass& other)
@@ -40,25 +40,19 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 	m_Camera->SetPosition(0.0f, 0.0f, -10.0f);
 
 	m_Model = new ModelClass;
-	if (!m_Model)
-	{
-		return false;
-	}
+	isNotValidReturn(m_Model, false);
 
-	result = m_Model->Initialize(m_D3D->GetDevice());
+	result = m_Model->Initialize(m_D3D->GetDevice(),L"../DirectX/data/seafloor.dds");
 	if (!result)
 	{
 		MessageBox(hwnd, L"Could not initialize the model object.", L"Error", MB_OK);
 		return false;
 	}
 
-	m_ColorShader = new ColorShaderClass;
-	if (!m_ColorShader)
-	{
-		return false;
-	}
+	m_TextureShader = new TextureShaderClass;
+	isNotValidReturn(m_TextureShader,false);
 
-	result = m_ColorShader->Initialize(m_D3D->GetDevice(), hwnd);
+	result = m_TextureShader->Initialize(m_D3D->GetDevice(), hwnd);
 	if (!result)
 	{
 		MessageBox(hwnd, L"Could not initialize the color shader", L"Error", MB_OK);
@@ -70,7 +64,7 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd)
 
 void GraphicsClass::Shutdown()
 {
-	isValidShutdown(m_ColorShader);
+	isValidShutdown(m_TextureShader);
 	isValidShutdown(m_Model);
 	isValidShutdown(m_D3D);
 	isValidDelete(m_Camera);
@@ -83,10 +77,7 @@ bool GraphicsClass::Frame()
 	bool result;
 
 	result = Render();
-	if (!result)
-	{
-		return false;
-	}
+	isNotValidReturn(result, false);
 
 	return true;
 }
@@ -106,12 +97,8 @@ bool GraphicsClass::Render()
 
 	m_Model->Render(m_D3D->GetDeviceContext());
 
-	result = m_ColorShader->Render(m_D3D->GetDeviceContext(), m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix);
-	if (!result)
-	{
-		return false;
-	}
-
+	result = m_TextureShader->Render(m_D3D->GetDeviceContext(), m_Model->GetIndexCount(), worldMatrix, viewMatrix, projectionMatrix,m_Model->GetTexture());
+	isNotValidReturn(result,false);
 
 	m_D3D->EndScene();
 	return true;
